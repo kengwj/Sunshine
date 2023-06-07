@@ -618,9 +618,9 @@ namespace nvhttp {
     tree.put("root.uniqueid", http::unique_id);
     tree.put("root.HttpsPort", map_port(PORT_HTTPS));
     tree.put("root.ExternalPort", map_port(PORT_HTTP));
-    tree.put("root.mac", platf::get_mac_address(local_endpoint.address().to_string()));
+  tree.put("root.mac", platf::get_mac_address(net::addr_to_normalized_string(local_endpoint.address())));
     tree.put("root.MaxLumaPixelsHEVC", video::active_hevc_mode > 1 ? "1869449984" : "0");
-    tree.put("root.LocalIP", local_endpoint.address().to_string());
+  tree.put("root.LocalIP", net::addr_to_normalized_string(local_endpoint.address()));
 
     if (video::active_hevc_mode == 3) {
       tree.put("root.ServerCodecModeSupport", "3843");
@@ -987,6 +987,7 @@ namespace nvhttp {
       tree.put("root.<xmlattr>.status_message"s, "The client is not authorized. Certificate verification failed."s);
     };
 
+  auto address_family = net::af_from_enum_string(config::sunshine.address_family);
     https_server.default_resource["GET"] = not_found<SimpleWeb::HTTPS>;
     https_server.resource["^/serverinfo$"]["GET"] = serverinfo<SimpleWeb::HTTPS>;
     https_server.resource["^/pair$"]["GET"] = [&add_cert](auto resp, auto req) { pair<SimpleWeb::HTTPS>(add_cert, resp, req); };
@@ -998,7 +999,7 @@ namespace nvhttp {
     https_server.resource["^/cancel$"]["GET"] = cancel;
 
     https_server.config.reuse_address = true;
-    https_server.config.address = "0.0.0.0"s;
+  https_server.config.address       = net::af_to_any_address_string(address_family);
     https_server.config.port = port_https;
 
     http_server.default_resource["GET"] = not_found<SimpleWeb::HTTP>;
@@ -1007,7 +1008,7 @@ namespace nvhttp {
     http_server.resource["^/pin/([0-9]+)$"]["GET"] = pin<SimpleWeb::HTTP>;
 
     http_server.config.reuse_address = true;
-    http_server.config.address = "0.0.0.0"s;
+  http_server.config.address       = net::af_to_any_address_string(address_family);
     http_server.config.port = port_http;
 
     auto accept_and_run = [&](auto *http_server) {
